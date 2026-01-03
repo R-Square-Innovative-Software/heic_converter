@@ -5,8 +5,8 @@
 A command-line tool for converting HEIC/HEIF image files to other common image formats (JPEG, PNG, BMP, TIFF, WebP). The converter includes embedded HEIC/HEIF codecs, eliminating the need for system-wide codec installation.
 
 **Author:** R Square Innovation Software  
-**Version:** v1.0  
-**License:** See LICENSE file
+**Version:** v1.1  
+**License:** GPLv3 (See LICENSE file)
 
 ## **Features**
 
@@ -47,6 +47,32 @@ A command-line tool for converting HEIC/HEIF image files to other common image f
 - GCC 11 or higher
 - CMake 3.18 or higher
 - Standard C++17 development libraries
+
+### Dependancies 
+
+```bash
+# Update system and install all dependencies
+sudo apt-get update && sudo apt-get install -y \
+    build-essential \
+    cmake \
+    pkg-config \
+    git \
+    g++ \
+    make \
+    libheif-dev \
+    libpng-dev \
+    libjpeg-dev \
+    libwebp-dev \
+    libtiff-dev \
+    libheif1 \
+    libpng16-16 \
+    libjpeg-turbo8 \
+    libwebp7 \
+    libwebpdemux2 \
+    libwebpmux3 \
+    libtiff6 \
+    exiftool
+```
 
 ## **Build Instructions**
 
@@ -89,7 +115,7 @@ cmake -DDEBIAN9_BUILD=ON .. # For Debian 9
 
 # or
 cmake -DDEBIAN12_BUILD=ON .. # For Debian 12/13
-make -j\$(nproc)
+make -j$(nproc)
 sudo make install # Optional
 ```
 
@@ -151,7 +177,7 @@ heic_converter -v image.heic
 
 |       **Option**       |              **Description**              | **Default** |
 | ---------------------- | ----------------------------------------- | ----------- |
-|  \-f, --format FORMAT  | Output format (jpg, png, bmp, tiff, webp) | jpg         |
+| \-f, --format FORMAT   | Output format (jpg, png, bmp, tiff, webp) | jpg         |
 | \-q, --quality N       | JPEG quality (1-100)                      | 85          |
 | \-c, --compression N   | PNG compression level (0-9)               | 6           |
 | \-s, --scale FACTOR    | Scale factor (0.1 to 10.0)                | 1.0         |
@@ -160,6 +186,11 @@ heic_converter -v image.heic
 | \-o, --overwrite       | Overwrite existing files                  | false       |
 | \-v, --verbose         | Enable verbose output                     | false       |
 | \--no-metadata         | Strip metadata from output                | false       |
+| \--no-timestamps       | Do not preserve file timestamps           | false       |
+| \--no-exif             | Strip EXIF metadata                       | false       |
+| \--no-xmp              | Strip XMP metadata                        | false       |
+| \--no-iptc             | Strip IPTC metadata                       | false       |
+| \--no-gps              | Strip GPS location data                   | false       |
 | \--no-color-profile    | Strip color profile from output           | false       |
 | \-h, --help            | Show help message                         |             |
 | \--version             | Show version information                  |             |
@@ -185,6 +216,7 @@ heic_converter_v1.0/
 - format_encoder.cpp - Output format encoding using system libraries
 - batch_processor.cpp - Batch and directory processing
 - file_utils.cpp - File system operations
+- metadata_handler.cpp - Metadata management
 - config.cpp - Configuration management
 
 ## **Embedded Codecs**
@@ -271,7 +303,8 @@ ctest --verbose
 
 ## **License**
 
-_See the LICENSE file for detailed licensing information.
+Software is licensed under GPLv3.
+See the LICENSE file for detailed licensing information.
 
 ## **Contributing**
 

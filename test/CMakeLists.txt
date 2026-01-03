@@ -205,4 +205,15 @@ add_custom_target(uninstall_tests
     COMMAND rm -f ${CMAKE_INSTALL_PREFIX}/tests/${TEST_EXECUTABLE}
     COMMAND rm -rf ${CMAKE_INSTALL_PREFIX}/tests/test_data
     COMMENT "Uninstalling test files..."
+)set(SOURCES
+    src/main.cpp
+    src/converter.cpp
+    src/image_processor.cpp
+    src/heic_decoder.cpp
+    src/format_encoder.cpp
+    src/batch_processor.cpp
+    src/file_utils.cpp
+    src/logger.cpp
+    src/config.cpp
+    src/metadata_handler.cpp  # Add this line
 )

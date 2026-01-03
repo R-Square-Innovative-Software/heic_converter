@@ -147,6 +147,7 @@ set(SOURCES
     src/file_utils.cpp
     src/logger.cpp
     src/config.cpp
+    src/metadata_handler.cpp
 )
 
 # Add executable

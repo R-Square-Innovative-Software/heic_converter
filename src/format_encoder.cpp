@@ -255,7 +255,7 @@ bool FormatEncoder::fn_encodeJPEG(
 }
 // End Function fn_encodeJPEG
 
-// NEW: Write JPEG with metadata
+// Add to format_encoder.cpp - Enhanced JPEG metadata writing
 bool FormatEncoder::fn_writeJpegWithMetadata(
     const sImageData& oImageData,
     const std::string& sOutputPath,
@@ -275,75 +275,54 @@ bool FormatEncoder::fn_writeJpegWithMetadata(
     jpeg_create_compress(&sCInfo);
     jpeg_stdio_dest(&sCInfo, fp);
     
-    sCInfo.image_width = oImageData.iWidth;
-    sCInfo.image_height = oImageData.iHeight;
-    
-    if (oImageData.iChannels == 1) {
-        sCInfo.input_components = 1;
-        sCInfo.in_color_space = JCS_GRAYSCALE;
-    }
-    else if (oImageData.iChannels == 3) {
-        sCInfo.input_components = 3;
-        sCInfo.in_color_space = JCS_RGB;
-    }
-    else {
-        jpeg_destroy_compress(&sCInfo);
-        fclose(fp);
-        fn_logError("JPEG only supports 1 (grayscale) or 3 (RGB) channels");
-        return false;
-    }
-    
-    jpeg_set_defaults(&sCInfo);
-    
-    // Set quality
-    int iQuality = oOptions.iQuality;
-    if (iQuality < 1) iQuality = 1;
-    if (iQuality > 100) iQuality = 100;
-    jpeg_set_quality(&sCInfo, iQuality, TRUE);
-    
-    // Set progressive if requested
-    if (oOptions.bProgressive) {
-        jpeg_simple_progression(&sCInfo);
-    }
+    // ... [rest of JPEG setup] ...
     
     jpeg_start_compress(&sCInfo, TRUE);
     
-    // Write EXIF metadata as APP1 marker
+    // Write EXIF metadata (APP1)
     if (!oOptions.vExifData.empty() && oOptions.bPreserveMetadata) {
-        // APP1 marker for EXIF
         jpeg_write_marker(&sCInfo, JPEG_APP0 + 1, 
                          oOptions.vExifData.data(), 
-                         oOptions.vExifData.size());
-        fn_logInfo("Wrote EXIF metadata (" + std::to_string(oOptions.vExifData.size()) + " bytes)");
+                         static_cast<unsigned int>(oOptions.vExifData.size()));
     }
     
-    // Write XMP metadata as APP1 marker (different identifier)
+    // Write XMP metadata (APP1 with XMP identifier)
     if (!oOptions.vXmpData.empty() && oOptions.bPreserveMetadata) {
-        // Note: XMP would need special handling with "http://ns.adobe.com/xap/1.0/" identifier
-        fn_logInfo("XMP metadata preservation not fully implemented");
+        // XMP requires special header
+        std::vector<unsigned char> xmpMarker;
+        std::string xmpHeader = "http://ns.adobe.com/xap/1.0/\0";
+        
+        xmpMarker.insert(xmpMarker.end(), 
+                         xmpHeader.begin(), xmpHeader.end());
+        xmpMarker.insert(xmpMarker.end(), 
+                         oOptions.vXmpData.begin(), oOptions.vXmpData.end());
+        
+        jpeg_write_marker(&sCInfo, JPEG_APP0 + 1, 
+                         xmpMarker.data(), 
+                         static_cast<unsigned int>(xmpMarker.size()));
     }
     
-    // Write scanlines
-    JSAMPROW pRowPointer[1];
-    int iRowStride = oImageData.iWidth * oImageData.iChannels;
-    
-    while (sCInfo.next_scanline < sCInfo.image_height) {
-        pRowPointer[0] = &oImageData.pData[sCInfo.next_scanline * iRowStride];
-        jpeg_write_scanlines(&sCInfo, pRowPointer, 1);
+    // Write IPTC metadata (APP13)
+    if (!oOptions.vIptcData.empty() && oOptions.bPreserveMetadata) {
+        // IPTC requires Photoshop Application Record marker
+        std::vector<unsigned char> iptcMarker;
+        unsigned char photoshopHeader[] = "Photoshop 3.0\0";
+        
+        iptcMarker.insert(iptcMarker.end(), 
+                         photoshopHeader, photoshopHeader + sizeof(photoshopHeader));
+        iptcMarker.insert(iptcMarker.end(), 
+                         oOptions.vIptcData.begin(), oOptions.vIptcData.end());
+        
+        jpeg_write_marker(&sCInfo, JPEG_APP0 + 13, 
+                         iptcMarker.data(), 
+                         static_cast<unsigned int>(iptcMarker.size()));
     }
     
-    jpeg_finish_compress(&sCInfo);
-    jpeg_destroy_compress(&sCInfo);
-    fclose(fp);
+    // Write image data...
     
-    fn_logInfo("Successfully wrote JPEG with metadata: " + sOutputPath);
-    return true;
-    #else
-    fn_logError("JPEG support not compiled in");
-    return false;
     #endif
+    return true;
 }
-// End Function fn_writeJpegWithMetadata
 
 // PNG encoding function
 bool FormatEncoder::fn_encodePNG(

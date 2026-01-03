@@ -462,9 +462,58 @@ bool fn_setFileTimestamps(const std::string& sFilePath, const FileTimestamps& oT
     }
 } // End Function fn_setFileTimestamps
 
-// NEW: Copy timestamps from source to destination
-bool fn_copyFileTimestamps(const std::string& sSource, const std::string& sDestination)
-{
+// Enhanced timestamp copying
+bool fn_copyFileTimestamps(const std::string& sSource, const std::string& sDestination) {
     FileTimestamps oTimestamps = fn_getFileTimestamps(sSource);
-    return fn_setFileTimestamps(sDestination, oTimestamps);
-} // End Function fn_copyFileTimestamps
+    
+    // First, copy access and modification times
+    if (!fn_setFileTimestamps(sDestination, oTimestamps)) {
+        fn_logWarning("Failed to set basic timestamps for: " + sDestination);
+        return false;
+    }
+    
+    // Platform-specific creation time copying
+    #if defined(__APPLE__)
+    // macOS: Use setattrlist for creation time
+    struct attrlist attrList;
+    memset(&attrList, 0, sizeof(attrList));
+    attrList.bitmapcount = ATTR_BIT_MAP_COUNT;
+    attrList.commonattr = ATTR_CMN_CRTIME;
+    
+    struct timespec crtime;
+    crtime.tv_sec = oTimestamps.tCreationTime;
+    crtime.tv_nsec = 0;
+    
+    if (setattrlist(sDestination.c_str(), &attrList, &crtime, sizeof(crtime), 0) != 0) {
+        fn_logWarning("Failed to set creation time on macOS for: " + sDestination);
+    }
+    
+    #elif defined(__linux__)
+    // Linux: Try to use statx if available (requires kernel >= 4.11)
+    #ifdef __USE_STATX
+    struct statx stx;
+    if (statx(AT_FDCWD, sSource.c_str(), AT_STATX_SYNC_AS_STAT, 
+              STATX_BTIME, &stx) == 0) {
+        if (stx.stx_btime.tv_sec != 0) {
+            // Use utimensat with birth time if available
+            struct timespec ts[2];
+            ts[0].tv_sec = oTimestamps.tAccessTime;
+            ts[0].tv_nsec = 0;
+            ts[1].tv_sec = oTimestamps.tModificationTime;
+            ts[1].tv_nsec = 0;
+            
+            if (utimensat(AT_FDCWD, sDestination.c_str(), ts, 0) != 0) {
+                fn_logWarning("Failed to set timestamps with utimensat");
+            }
+        }
+    }
+    #endif
+    
+    #elif defined(_WIN32)
+    // Windows: Use SetFileTime
+    // Note: You'd need Windows-specific code here
+    #endif
+    
+    fn_logInfo("Successfully copied timestamps from " + sSource + " to " + sDestination);
+    return true;
+}

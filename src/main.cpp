@@ -154,6 +154,11 @@ int fn_parseArguments(int argc, char* argv[], oConfig& oCurrentConfig)
     while (iCurrentIndex < vsArguments.size()) 
     { // Begin while
         std::string sCurrentArg = vsArguments[iCurrentIndex]; // Local Function
+        oCurrentConfig.bPreserveTimestamps = true;  // Default
+        oCurrentConfig.bPreserveEXIF = true;        // Default  
+        oCurrentConfig.bPreserveXMP = true;         // Default
+        oCurrentConfig.bPreserveIPTC = true;        // Default
+        oCurrentConfig.bPreserveGPS = true;         // Default
         
         // Check for help flag
         if (sCurrentArg == "-h" || sCurrentArg == "--help") 
