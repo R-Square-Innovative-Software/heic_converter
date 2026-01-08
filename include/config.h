@@ -7,7 +7,7 @@
 
 // Program Information
 const std::string sPROGRAM_NAME = "heic_converter";
-const std::string sVERSION = "v1.1";
+const std::string sVERSION = "v1.2";
 const std::string sAUTHOR = "R Square Innovation Software";
 
 // Build Configuration
